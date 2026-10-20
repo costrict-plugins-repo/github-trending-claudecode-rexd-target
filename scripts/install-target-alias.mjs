@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { homedir } from "node:os"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const pluginRoot = resolve(__dirname, "..")
+const args = process.argv.slice(2)
+const scope = args[0]
+const source = resolve(pluginRoot, "aliases/target.md")
+
+if (scope === "--help" || scope === "-h") {
+  process.stdout.write(`Usage:\n  bun run install:target-alias --user\n  bun run install:target-alias [project-path]\n\nOptions:\n  --user, --global  Install /target as a personal skill for all projects.\n  project-path      Install /target as a project-local command. Defaults to the current project.\n`)
+  process.exit(0)
+}
+
+const installUser = scope === "--user" || scope === "--global" || scope === "user" || scope === "global"
+const projectRoot = resolve(scope || process.env.CLAUDE_PROJECT_DIR || process.cwd())
+const destination = installUser
+  ? resolve(homedir(), ".claude/skills/target/SKILL.md")
+  : resolve(projectRoot, ".claude/commands/target.md")
+
+if (!existsSync(source)) {
+  process.stderr.write(`Alias template not found: ${source}\n`)
+  process.exit(1)
+}
+
+mkdirSync(dirname(destination), { recursive: true })
+writeFileSync(destination, readFileSync(source, "utf8"))
+process.stdout.write(`Installed /target ${installUser ? "user" : "project"} alias at ${destination}\n`)
